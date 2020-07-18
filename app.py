@@ -1,9 +1,15 @@
 from flask import Flask, escape, render_template, request
+from flask_socketio import SocketIO
 from dictation import start_stream
 from reading import start_reading
 import time
 
 app = Flask(__name__)
+socketio = SocketIO(app)
+
+@socketio.on('audioMessage')
+def handle_message(audioMessage):
+    print(audioMessage)
 
 @app.route('/')
 def index():
@@ -37,4 +43,5 @@ def hello(name):
 	return f'hello {escape(name)}!'
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port="5000", debug=True)
+    socketio.run(app)
+    #app.run(host="127.0.0.1", port="5000", debug=True)
