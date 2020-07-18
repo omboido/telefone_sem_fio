@@ -1,15 +1,21 @@
 from flask import Flask, escape, render_template, request
 from flask_socketio import SocketIO
-from dictation import start_stream
+#from dictation import start_stream
 from reading import start_reading
+from dic import start_stream
 import time
+import requests
+from requests.auth import HTTPBasicAuth
+from ibm_watson import SpeechToTextV1
+
+import configparser
 
 app = Flask(__name__)
 socketio = SocketIO(app)
 
 @socketio.on('audioMessage')
 def handle_message(audioMessage):
-    print(audioMessage)
+    start_stream(audioMessage)
 
 @app.route('/')
 def index():

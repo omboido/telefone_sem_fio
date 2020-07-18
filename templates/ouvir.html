@@ -46,7 +46,9 @@
                     
                     navigator.mediaDevices.getUserMedia(constraints)
                     .then(function(stream) {
+                            var options = { mimeType: "audio/ogg; codecs=opus"};
                             var mediaRecorder = new MediaRecorder(stream);
+                            console.log(mediaRecorder);
                             var press = document.getElementById("record");
                             var chunks = [];
                     

@@ -28,7 +28,7 @@ BUF_MAX_SIZE = CHUNK * 10
 q = Queue(maxsize=int(round(BUF_MAX_SIZE / CHUNK)))
 
 # Cria o audio source com a fila
-audio_source = AudioSource(q, True, True)
+# audio_source = AudioSource(q, True, True)
 
 #configura o speech2text
 authenticator = IAMAuthenticator(config['SPEECH2TEXT']['API_KEY'])
@@ -36,7 +36,7 @@ speech_to_text = SpeechToTextV1(
    authenticator=authenticator)
 speech_to_text.set_service_url(config['SPEECH2TEXT']['URL'])
 
-resultado = ''
+texto = ''
 
 # classe de callback para o servico de reconhecimento de voz
 class MyRecognizeCallback(RecognizeCallback):
@@ -45,9 +45,9 @@ class MyRecognizeCallback(RecognizeCallback):
         RecognizeCallback.__init__(self)
 
     def on_transcription(self, transcript):
-        global resultado
+        global texto
         print('transcript: ', transcript[0]['transcript'])
-        resultado = transcript[0]['transcript']
+        texto = transcript[0]['transcript']
         pass
 
     def on_connected(self):
@@ -76,10 +76,12 @@ class MyRecognizeCallback(RecognizeCallback):
         print("Conexão fechada")
 
 # inicia o reconhecimento usando o audio_source
-def recognize_using_websocket(*args):
+def recognize_using_websocket(recorded):
+    print('FOOOOOOOOSOOOOOOOO')
+    audio_source = AudioSource(recorded, False, False)
     mycallback = MyRecognizeCallback()
     speech_to_text.recognize_using_websocket(audio=audio_source,
-                                             content_type='audio/l16; rate=44100',
+                                             content_type='audio/ogg; codecs=opus',
                                              recognize_callback=mycallback,
                                              model='pt-BR_NarrowbandModel',
                                              interim_results=False)
@@ -102,48 +104,5 @@ def pyaudio_callback(in_data, frame_count, time_info, status):
     return (None, pyaudio.paContinue)
 
 def start_stream(recorded):
-    # instancia pyaudio
-    audio = pyaudio.PyAudio()
-    print(recorded)
-
-    # abre stream
-    stream = audio.open(
-        format=FORMAT,
-        channels=CHANNELS,
-        rate=RATE,
-        input=True,
-        frames_per_buffer=CHUNK,
-        stream_callback=pyaudio_callback,
-        start=False
-    )
-
-    #########################################################################
-    #### Start the recording and start service to recognize the stream ######
-    #########################################################################
-
-    stream.start_stream()
-
-    try:
-        if audio_source.is_recording == False:
-            audio_source.is_recording = True
-        recognize_thread = Thread(target=recognize_using_websocket, args=())
-        recognize_thread.start()
-
-        command = ''
-        while command != 'q':
-            command = input()
-
-        # para gravacao
-        audio_source.completed_recording()
-        stream.stop_stream()
-        stream.close()
-        audio.terminate()
-        recognize_thread.join()
-        return resultado
-
-    except KeyboardInterrupt:
-        # para gravacao
-        audio_source.completed_recording()
-        stream.stop_stream()
-        stream.close()
-        audio.terminate()
+    recognize_using_websocket(recorded)
+    
