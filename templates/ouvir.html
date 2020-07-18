@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Telefone Sem Fio</title>
+  <style>
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    .column {
+        width: 33.33%;
+    }
+    /* Clear floats after the columns */
+    .row:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+    <div style="background-color:rgb(255, 255, 255);font-family: Arial, Helvetica, sans-serif;border-radius: 25px;line-height:normal">
+        <div class="text-center">
+            <h1>Brincando de telefone sem fio com o IBM Watson</h1>
+        </div>
+        <div align="center">
+            <span style="width: 40%; float: left; text-align: right;">
+                <img src="/static/wireleft.png">
+            </span>
+            <span style="width: 20%; padding: 0px 15px 0px 15px; float: left;">
+                <input type="button" id="record" value="record" style="color:rgb(245,245,245);background-color:rgb(1, 149, 254);border: solid 5px rgb(245,245,245);padding: 15px 32px;text-align: center;text-decoration: none;margin: 4px 2px;cursor: pointer;border-radius: 15px">
+            
+                <script>
+                if (navigator.mediaDevices) {
+                console.log('getUserMedia supported.');
+            
+                var constraints = { audio: true };
+                var chunks = [];
+            
+                navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream) {
+            
+                    var mediaRecorder = new MediaRecorder(stream);
+                    var press = document.getElementById("record")
+            
+                    press.addEventListener('mousedown', function(){
+                        this.style.backgroundColor = "red";
+                        mediaRecorder.start();
+                    });
+                    press.addEventListener('touchstart', function(){
+                        this.style.backgroundColor = "red";
+                        mediaRecorder.start();
+                    });
+                    press.addEventListener('mouseup', function(){
+                        this.style.backgroundColor = "rgb(1, 149, 254)";
+                        mediaRecorder.stop();
+                    });
+                    press.addEventListener('touchend', function(){
+                        this.style.backgroundColor = "rgb(1, 149, 254)";
+                        mediaRecorder.stop();
+                    });
+            
+                    let record = document.getElementById("record");
+                    let stop = document.getElementById("stop");
+            
+                    mediaRecorder.onstop = function(e) 
+                    {
+                        console.log("data available after MediaRecorder.stop() called.");
+            
+                        var clipName = prompt('Enter a name for your sound clip');
+            
+                        var clipContainer = document.createElement('article');
+                        var clipLabel = document.createElement('p');
+                        var audio = document.createElement('audio');
+                        var deleteButton = document.createElement('button');
+                        
+                        clipContainer.classList.add('clip');
+                        audio.setAttribute('controls', '');
+                        deleteButton.innerHTML = "Delete";
+                        clipLabel.innerHTML = clipName;
+            
+                        clipContainer.appendChild(audio);
+                        clipContainer.appendChild(clipLabel);
+                        clipContainer.appendChild(deleteButton);
+            
+                        var soundClips = document.createElement('div');
+                        soundClips.appendChild(clipContainer);
+                        var body = document.getElementsByTagName('body')[0]
+                        body.appendChild(soundClips);
+            
+                        audio.controls = true;
+                        var blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
+                        chunks = [];
+                        var audioURL = URL.createObjectURL(blob);
+                        // aqui deve vir o codigo para enviar o blob para o servidor
+            
+            
+            
+            
+            
+                        fetch("./interpretar", {
+                            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                            mode: 'cors', // no-cors, *cors, same-origin
+                            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                            credentials: 'same-origin', // include, *same-origin, omit
+                            headers: {
+                            'Content-Type': 'audio/ogg'
+                            // 'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            redirect: 'follow', // manual, *follow, error
+                            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                            body: blob
+                        }).then(resp => console.log(resp))
+                        .catch(resp => console.log("catch pegou esse erro: " +resp));
+            
+                        
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+                        audio.src = audioURL;
+                        console.log("recorder stopped");
+            
+                        deleteButton.onclick = function(e) {
+                            evtTgt = e.target;
+                            evtTgt.parentNode.parentNode.removeChild(evtTgt.parentNode);
+                        }
+                    }
+            
+                    mediaRecorder.ondataavailable = function(e) {
+                        chunks.push(e.data);
+                    }
+                })
+                .catch(function(err) {
+                    console.log('The following error occurred: ' + err);
+                })
+                }
+                </script>
+            </span>
+            <span style="width: 40%; float: left; text-align: left;">
+                <img src="/static/wireright.png">
+            </span>
+        </div>
+    </div>
+
+</body>
+</html>
