@@ -6,6 +6,9 @@ from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from threading import Thread
 import configparser
 import time
+from chardet import detect
+import json
+import base64
 
 try:
     from Queue import Queue, Full
@@ -15,7 +18,6 @@ except ImportError:
 #carrega configuracoes
 config = configparser.ConfigParser()
 config.read('config.ini')
-print(config['SPEECH2TEXT'])
 
 ###############################################
 #### inicia fila para gravar as gravacoes do microfone ##
@@ -75,13 +77,13 @@ class MyRecognizeCallback(RecognizeCallback):
     def on_close(self):
         print("Conexão fechada")
 
+
 # inicia o reconhecimento usando o audio_source
 def recognize_using_websocket(recorded):
-    print('FOOOOOOOOSOOOOOOOO')
     audio_source = AudioSource(recorded, False, False)
     mycallback = MyRecognizeCallback()
     speech_to_text.recognize_using_websocket(audio=audio_source,
-                                             content_type='audio/ogg; codecs=opus',
+                                             content_type='audio/webm; codecs=opus',
                                              recognize_callback=mycallback,
                                              model='pt-BR_NarrowbandModel',
                                              interim_results=False)
@@ -103,6 +105,33 @@ def pyaudio_callback(in_data, frame_count, time_info, status):
         pass # discard
     return (None, pyaudio.paContinue)
 
+def guess_encoding(csv_file):
+    """guess the encoding of the given file"""
+    import io
+    import locale
+    with io.open(csv_file, "rb") as f:
+        data = f.read(5)
+    if data.startswith(b"\xEF\xBB\xBF"):  # UTF-8 with a "BOM"
+        return "utf-8-sig"
+    elif data.startswith(b"\xFF\xFE") or data.startswith(b"\xFE\xFF"):
+        return "utf-16"
+    else:  # in Windows, guessing utf-8 doesn't work, so we have to try
+        try:
+            with io.open(csv_file, encoding="utf-8") as f:
+                preview = f.read(222222)
+                return "utf-8"
+        except:
+            return locale.getdefaultlocale()[1]
+
 def start_stream(recorded):
-    recognize_using_websocket(recorded)
-    
+    print(recorded)
+    with open(recorded.decode('cp437'), 'rb') as blob:
+        audio = blob.read()
+    audio_source = AudioSource(audio, False, False)
+    print(audio_source.input)
+    mycallback = MyRecognizeCallback()
+    speech_to_text.recognize_using_websocket(audio=blob,
+                                             content_type='audio/webm; codecs=opus',
+                                             recognize_callback=mycallback,
+                                             model='pt-BR_NarrowbandModel',
+                                             interim_results=False)

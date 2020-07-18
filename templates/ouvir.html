@@ -46,9 +46,7 @@
                     
                     navigator.mediaDevices.getUserMedia(constraints)
                     .then(function(stream) {
-                            var options = { mimeType: "audio/ogg; codecs=opus"};
                             var mediaRecorder = new MediaRecorder(stream);
-                            console.log(mediaRecorder);
                             var press = document.getElementById("record");
                             var chunks = [];
                     
@@ -77,18 +75,19 @@
                             //
                             mediaRecorder
                                 .addEventListener('dataavailable', event => {
-                                chunks.push(event.data)
+                                socket.emit('audioMessage', event.data);
+                                //chunks.push(event.data);
                                 });
 
                             //
                             // mediarecorder event stop
                             // trigger socketio audio message emission.
                             //
-                            mediaRecorder
-                                .addEventListener('stop', () => {
-                                socket.emit('audioMessage', chunks);
-                                chunks = []
-                                });
+                            // mediaRecorder
+                            //     .addEventListener('stop', () => {
+                            //     socket.emit('audioMessage', chunks);
+                            //     chunks = []
+                            //     });
                     })
                     .catch(function(err) {
                         console.log('The following error occurred: ' + err)
