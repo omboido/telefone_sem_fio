@@ -6,9 +6,9 @@ from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 from threading import Thread
 import configparser
 import time
-from chardet import detect
 import json
-import base64
+import requests
+from requests.auth import HTTPBasicAuth
 
 try:
     from Queue import Queue, Full
@@ -105,33 +105,53 @@ def pyaudio_callback(in_data, frame_count, time_info, status):
         pass # discard
     return (None, pyaudio.paContinue)
 
-def guess_encoding(csv_file):
-    """guess the encoding of the given file"""
-    import io
-    import locale
-    with io.open(csv_file, "rb") as f:
-        data = f.read(5)
-    if data.startswith(b"\xEF\xBB\xBF"):  # UTF-8 with a "BOM"
-        return "utf-8-sig"
-    elif data.startswith(b"\xFF\xFE") or data.startswith(b"\xFE\xFF"):
-        return "utf-16"
-    else:  # in Windows, guessing utf-8 doesn't work, so we have to try
-        try:
-            with io.open(csv_file, encoding="utf-8") as f:
-                preview = f.read(222222)
-                return "utf-8"
-        except:
-            return locale.getdefaultlocale()[1]
-
 def start_stream(recorded):
-    print(recorded)
-    with open(recorded.decode('cp437'), 'rb') as blob:
-        audio = blob.read()
-    audio_source = AudioSource(audio, False, False)
-    print(audio_source.input)
-    mycallback = MyRecognizeCallback()
-    speech_to_text.recognize_using_websocket(audio=blob,
-                                             content_type='audio/webm; codecs=opus',
-                                             recognize_callback=mycallback,
-                                             model='pt-BR_NarrowbandModel',
-                                             interim_results=False)
+    print('<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>')
+    print(type(recorded[0]))
+    #auth_var = HTTPBasicAuth('WATSON_STT_APIKEY', config['SPEECH2TEXT']['API_KEY'])
+    auth_var = HTTPBasicAuth('apikey', config['SPEECH2TEXT']['API_KEY'])
+
+    #?model=en-US_NarrowbandModel pt-BR_NarrowbandModel
+
+    x = requests.post( 
+        (config['SPEECH2TEXT']['URL'] + '/v1/recognize?model=pt-BR_NarrowbandModel'), 
+        auth=auth_var,
+        data = recorded[0], 
+        headers = {"Content-Type": "audio/webm; codecs=opus"})
+
+    print('texto:')
+    json_resposta = x.text
+    print(json_resposta)
+    print('interpretacao')
+
+    interpretacao = json.loads(json_resposta, encoding='utf-8')['results'][0 ]['alternatives'][0]['transcript']
+    print(interpretacao)
+
+    auth_var = HTTPBasicAuth('apikey', config['TEXT2SPEECH']['API_KEY'])
+
+    #?model=en-US_NarrowbandModel pt-BR_NarrowbandModel
+
+    print("como ficou:")
+    print("{\"text\":\"" + interpretacao + "\"}")
+
+    fala = requests.post( 
+        (config['TEXT2SPEECH']['URL'] + '/v1/synthesize?voice=pt-BR_IsabelaV3Voice'), #pt-BR_IsabelaV3Voice
+        auth=auth_var,
+        data = "{\"text\":\"" + interpretacao + "\"}",
+        #data = "\{\"text\":\"" + interpretacao + "\"}",
+        #data = interpretacao, 
+        #headers = {"Content-Type": "application/json", "Accept":"audio/wav"})
+        headers = {"Content-Type": "application/json", "Accept":"audio/mp3; codecs=opus"})
+        #headers = {"Content-Type": "text/plain", "Accept":"audio/ogg; codecs=opus"})
+        #headers = {"Content-Type": "audio/ogg; codecs=opus"})
+    print("resposta do text2speech - tipo: ")
+    print(type(fala))
+    #print(type(fala.content))
+    print(type(fala.encoding))
+    #print(fala.text)
+    print(fala.headers)
+    print(fala.status_code)
+
+    with open("fala.mp3", "wb") as f:
+        f.write(fala.content)
+    
